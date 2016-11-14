@@ -1,7 +1,7 @@
 package hw1;
 
 public class Artifact {
-	public String[] Genres = {"PAINTING", "SCULPTURE", "POEM"};
+	public static String[] Genres = {"PAINTING", "SCULPTURE", "POEM"};
 	private String creator;
 	private String genre;
 	private String ID;
@@ -13,7 +13,7 @@ public class Artifact {
 	}
 	private void generateRandomArtifact(){
 		this.creator ="Artist#"+randomNum();
-		this.genre =Genres[((int) Math.random()*Genres.length) -1];
+		this.genre =Genres[((int)(Math.random()*(Genres.length-1)))];
 		this.ID ="ID#"+randomNum();
 		this.yearOfCreation = ((int) randomNum()) % 2016;
 		this.placeOfCreation = "placeOfCreation#"+randomNum();
