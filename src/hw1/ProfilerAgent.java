@@ -28,6 +28,8 @@ public class ProfilerAgent extends Agent {
 	public void setup(){
 		System.out.println("ProfilerAgent started! ID: "+this.getName());
 		user = new User();
+		System.out.println("User interested in artifacts of type: "+user.getGenreInterest());
+		System.out.println("User interested in artifacts created: "+(user.getYearsOfInterest()-50)+" - "+(user.getYearsOfInterest()+50));
 		//lookup tour guides
 		tourGuides = lookupTourGuides();
 		//Subscribe to guides
@@ -177,6 +179,10 @@ public class ProfilerAgent extends Agent {
 				artifacts = (ArrayList<Artifact>) msg.getContentObject();
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+			System.out.println("---- Profiler received detailed tour ----");
+			for(Artifact artifact : artifacts){
+				System.out.println("Artifact - Genre: "+artifact.getGenre()+" Created: "+artifact.getYearOfCreation());
 			}
 		}
 	}

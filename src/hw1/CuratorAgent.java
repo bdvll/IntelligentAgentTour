@@ -20,7 +20,7 @@ import jade.proto.SimpleAchieveREResponder;
 public class CuratorAgent extends Agent {
 	
 	public HashMap<String, Artifact> artCollection;
-	int numberOfArtifacts = 10;
+	int numberOfArtifacts = 200;
 	
 	public void setup(){
 		System.out.println("CuratorAgent started! ID: "+this.getName());
