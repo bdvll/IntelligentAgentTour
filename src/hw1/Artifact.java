@@ -1,10 +1,12 @@
 package hw1;
 
-public class Artifact {
+import java.io.Serializable;
+
+public class Artifact implements Serializable {
 	public static String[] Genres = {"PAINTING", "SCULPTURE", "POEM"};
 	private String creator;
 	private String genre;
-	private String ID;
+	private long ID;
 	private int yearOfCreation;
 	private String placeOfCreation;
 	
@@ -14,8 +16,8 @@ public class Artifact {
 	private void generateRandomArtifact(){
 		this.creator ="Artist#"+randomNum();
 		this.genre =Genres[((int)(Math.random()*(Genres.length-1)))];
-		this.ID ="ID#"+randomNum();
-		this.yearOfCreation = ((int) randomNum()) % 2016;
+		this.ID =(long) (Math.random() * Long.MAX_VALUE);
+		this.yearOfCreation = (int) (Math.random() * 500 + 1500);
 		this.placeOfCreation = "placeOfCreation#"+randomNum();
 		
 	}
@@ -47,10 +49,10 @@ public class Artifact {
 	public void setCreator(String creator) {
 		this.creator = creator;
 	}
-	public String getID() {
+	public long getID() {
 		return ID;
 	}
-	public void setID(String iD) {
+	public void setID(long iD) {
 		ID = iD;
 	}
 }

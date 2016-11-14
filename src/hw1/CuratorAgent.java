@@ -19,8 +19,8 @@ import jade.proto.SimpleAchieveREResponder;
 
 public class CuratorAgent extends Agent {
 	
-	public HashMap<String, Artifact> artCollection;
-	int numberOfArtifacts = 200;
+	public HashMap<Long, Artifact> artCollection;
+	int numberOfArtifacts = 100;
 	
 	public void setup(){
 		System.out.println("CuratorAgent started! ID: "+this.getName());
@@ -36,7 +36,7 @@ public class CuratorAgent extends Agent {
 			
 			@Override
 			public void action() {
-				artCollection = new HashMap<String, Artifact>();
+				artCollection = new HashMap<Long, Artifact>();
 				for(int i = 0; i < numberOfArtifacts; i++ ){
 					Artifact art  = new Artifact();
 					artCollection.put(art.getID(), art);
@@ -81,7 +81,7 @@ public class CuratorAgent extends Agent {
 			User user;
 			try {
 				user = (User) request.getContentObject();
-				ArrayList<String> artifacts = getTour(user);
+				ArrayList<Long> artifacts = getTour(user);
 				reply.setContentObject(artifacts);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -104,7 +104,7 @@ public class CuratorAgent extends Agent {
 			reply.setPerformative(ACLMessage.INFORM);
 			
 			try {
-				ArrayList<String> artifactsIDs = (ArrayList<String>) request.getContentObject();
+				ArrayList<Long> artifactsIDs = (ArrayList<Long>) request.getContentObject();
 				ArrayList<Artifact> artifactsDetailed = getArtifactDetails(artifactsIDs);
 				reply.setContentObject(artifactsDetailed);
 			} catch (Exception e) {
@@ -115,11 +115,11 @@ public class CuratorAgent extends Agent {
 		}
 	}
 	//Picks out artifacts fitting user preferences returning list of IDs
-	private ArrayList<String> getTour(User user){
-		ArrayList<String> artifactsIDs = new ArrayList<String>();
+	private ArrayList<Long> getTour(User user){
+		ArrayList<Long> artifactsIDs = new ArrayList<Long>();
 		
 		for(Artifact a : artCollection.values()){
-			if(a.getGenre() == user.getGenreInterest() && a.getYearOfCreation() > user.getYearsOfInterest()-50 && a.getYearOfCreation() < user.getYearsOfInterest()+50){
+			if(a.getGenre().equals(user.getGenreInterest()) && a.getYearOfCreation() > user.getYearsOfInterest()-50 && a.getYearOfCreation() < user.getYearsOfInterest()+50){
 				artifactsIDs.add(a.getID());
 			}
 		}
@@ -127,10 +127,10 @@ public class CuratorAgent extends Agent {
 	}
 	
 	//Fetching details on every requested artifact by ID
-	private ArrayList<Artifact> getArtifactDetails(ArrayList<String> artifactIDs){
+	private ArrayList<Artifact> getArtifactDetails(ArrayList<Long> artifactIDs){
 		ArrayList<Artifact> artifacts = new ArrayList<Artifact>();
 		
-		for(String id: artifactIDs){
+		for(long id: artifactIDs){
 			artifacts.add(artCollection.get(id));
 		}
 		return artifacts;

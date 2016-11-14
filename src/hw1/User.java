@@ -10,7 +10,7 @@ public class User  implements Serializable {
 	private long id;
 
 	public User(){
-		this.yearsOfInterest = (int) Math.random()*2016;
+		this.yearsOfInterest = (int) (Math.random() * 600 + 1400);
 		this.age = (int) Math.random()*100;
 		this.genreInterest = Artifact.Genres[((int)Math.random()*(Artifact.Genres.length-1))];
 		this.id = (long) Math.random()*System.currentTimeMillis();

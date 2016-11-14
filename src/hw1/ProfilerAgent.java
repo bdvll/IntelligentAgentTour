@@ -26,7 +26,7 @@ public class ProfilerAgent extends Agent {
 	ArrayList<AID> tourGuides;
 	
 	public void setup(){
-		System.out.println("ProfilerAgent started! ID: "+this.getName());
+		System.out.println("Hey HEY OH! ProfilerAgent started! ID: "+this.getName());
 		user = new User();
 		System.out.println("User interested in artifacts of type: "+user.getGenreInterest());
 		System.out.println("User interested in artifacts created: "+(user.getYearsOfInterest()-50)+" - "+(user.getYearsOfInterest()+50));
@@ -176,7 +176,9 @@ public class ProfilerAgent extends Agent {
 			System.out.println("Profiler received artifact details response from Curator");
 
 			try {
+				//!!!!!!!!!ARTIFACT PRINT!!!!!!!!!!!
 				artifacts = (ArrayList<Artifact>) msg.getContentObject();
+				System.out.println("!!! ARTIFACT SIZE: "+artifacts.size()+" !!!");
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
