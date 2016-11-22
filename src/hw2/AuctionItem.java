@@ -10,13 +10,15 @@ public class AuctionItem implements Serializable{
 	private String status;
 	private int priceReductionAmount;
 	private List<Long> artifactList;
+	private String genre;
 	
-	public AuctionItem(int itemName, int price, int lowestPrice) {
+	public AuctionItem(int itemName, int price, int lowestPrice, String genre) {
 		super();
 		this.itemName = itemName;
 		this.price = price;
 		this.lowestPrice = lowestPrice;
 		this.priceReductionAmount = (int) price/10;
+		this.genre = genre;
 	}
 	public List<Long> getArtifactList() {
 		return artifactList;
@@ -55,6 +57,11 @@ public class AuctionItem implements Serializable{
 	public void setStatus(String s){
 		this.status = s;
 	}
-	
+	public String getGenre() {
+		return genre;
+	}
+	public void setGenre(String genre) {
+		this.genre = genre;
+	}
 	
 }

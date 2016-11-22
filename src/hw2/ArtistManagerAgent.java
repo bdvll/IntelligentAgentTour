@@ -29,16 +29,17 @@ public class ArtistManagerAgent extends Agent{
 		System.out.println("ArtistManagerAgent started, name: " + getLocalName());
 		
 		//Create Artifacts
-		TickerBehaviour tickerBehaviour = new TickerBehaviour(this, 5000){
+		TickerBehaviour tickerBehaviour = new TickerBehaviour(this, 10000){
 
 			@Override
 			protected void onTick() {
+				System.out.println("-tick-");
 				if(auctionItem == null) {
 					System.out.println("ArtistManager: No current auctions; Starting one...");
 					startNewAuction();
 				}else if(auctionItem.getPrice() > auctionItem.getLowestPrice()+auctionItem.getPriceReductionAmount()){
-						System.out.println("ArtistManager: Active auction: lowering price");
 						auctionItem.setPrice(auctionItem.getPrice() - auctionItem.getPriceReductionAmount());
+						System.out.println("ArtistManager: Active auction: lowering price to: "+auctionItem.getPrice());
 						sendNewBid();
 				}else{
 					System.out.println("ArtistManager: Price too low, ending auction");
@@ -60,22 +61,29 @@ public class ArtistManagerAgent extends Agent{
 				if(msg != null){
 					switch(msg.getPerformative()){
 		
-						case ACLMessage.ACCEPT_PROPOSAL: {
+						case ACLMessage.ACCEPT_PROPOSAL: 
 							System.out.println("ArtistManager: Received ACCEPT_PROPOSAL");
 							try {
 								AuctionItem acceptedAI = (AuctionItem)msg.getContentObject();
 								//Bid is on current round
-								if(acceptedAI.getPrice() == auctionItem.getPrice()){
-									deliverArtifact(msg);
+								if(auctionItem != null){
+									if(acceptedAI.getPrice() == auctionItem.getPrice()){
+										deliverArtifact(msg);
+									}
+								}else{
+									System.out.println("ArtistManager: FAILURE: no more artifacts left, too bad Profiler");
+									ACLMessage errorMsg = msg.createReply();
+									errorMsg.setPerformative(ACLMessage.FAILURE);
+									errorMsg.setOntology("ARTIFACT_DELIVERY");
+									send(errorMsg);
 								}
 							} catch (UnreadableException e) {
 								e.printStackTrace();
 							}
-						}
-						case ACLMessage.REJECT_PROPOSAL: {
+						break;
+						case ACLMessage.REJECT_PROPOSAL: 
 							System.out.println("ArtistManager: Received REJECT_PROPOSAL");
-						
-						}
+						break;
 					}
 				}
 			}
@@ -84,18 +92,19 @@ public class ArtistManagerAgent extends Agent{
 		//Add behaviours
 		ParallelBehaviour parallelBehaviour = new ParallelBehaviour();
 		parallelBehaviour.addSubBehaviour(tickerBehaviour);
-		parallelBehaviour.addSubBehaviour(cyclicBehaviour);
+		parallelBehaviour.addSubBehaviour(cyclicBehaviour);		
 		addBehaviour(parallelBehaviour);
 	}
 	
 	private void startNewAuction(){
+		System.out.println("");
 		System.out.println("ArtistMAnager: Sending start of auction message");
 		//Add list of new artifact to hashmap of artifacts
 		List<Long> listArt = genArt();
 		//artHash.put(listArt.get(0).getName(), listArt);
 		
 		//Create auction item & auction message
-		auctionItem = new AuctionItem(artHash.get(listArt.get(0)).getName(), artHash.get(listArt.get(0)).getValue()*2, artHash.get(listArt.get(0)).getValue());
+		auctionItem = new AuctionItem(artHash.get(listArt.get(0)).getName(), artHash.get(listArt.get(0)).getValue()*2, artHash.get(listArt.get(0)).getValue(), artHash.get(listArt.get(0)).getGenre());
 		auctionItem.setArtifactList(listArt);
 		auctionItem.setStatus("active");
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
@@ -117,7 +126,6 @@ public class ArtistManagerAgent extends Agent{
 		System.out.println("ArtistMAnager: Sending end of auction message");
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setOntology("END_AUCTION");
-		
 		sendToCurators(msg, auctionItem);
 		
 		auctionItem = null;
@@ -127,7 +135,7 @@ public class ArtistManagerAgent extends Agent{
 		List<Long> artifactList = auctionItem.getArtifactList();
 		if(artifactList.size() >= 1){
 			Artifact artifact = artHash.remove(artifactList.remove(artifactList.size()-1));
-			ACLMessage msg = new ACLMessage(ACLMessage.CONFIRM);
+			ACLMessage msg = curatorMsg.createReply();//new ACLMessage(ACLMessage.CONFIRM);
 			msg.setOntology("ARTIFACT_DELIVERY");
 			try {
 				msg.setContentObject(artifact);
@@ -135,16 +143,17 @@ public class ArtistManagerAgent extends Agent{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			msg.addReceiver(curatorMsg.getSender());
+			//msg.addReceiver(curatorMsg.getSender());
 			send(msg);
 			if(artifactList.size() == 0){
-				System.out.println("ArtistManager: No artifacts left, ending auction");
+				System.out.println("ArtistManager: This was the last artifact, ending auction");
 				endAuction();
 			}
 		}	
 		else{
 			System.out.println("ArtistManager: FAILURE: no more artifacts left, too bad Profiler");
-			ACLMessage msg = new ACLMessage(ACLMessage.FAILURE);
+			ACLMessage msg = curatorMsg.createReply();
+			msg.setPerformative(ACLMessage.FAILURE);
 			msg.setOntology("ARTIFACT_DELIVERY");
 			send(msg);
 		}
@@ -201,27 +210,39 @@ public class ArtistManagerAgent extends Agent{
 		return curators;
 	}
 	
-	//Class to handle messages coming from TourGudie requesting the building of a  tour
-		class HandleAuctionAck extends SimpleAchieveREResponder{
-			public HandleAuctionAck(Agent agent, MessageTemplate messageTemplate){
+	//Class to handle messages coming from Curator requesting artifact
+		class HandleCuratorDelivery extends SimpleAchieveREResponder{
+			public HandleCuratorDelivery(Agent agent, MessageTemplate messageTemplate){
 				super(agent, messageTemplate);
 			}
 			//Define how to handle incoming BuildTour message
 			@Override
 			protected ACLMessage prepareResponse(ACLMessage request){
-				
-				System.out.println("Curator received BuildTour message from TourGuide");
-				ACLMessage reply = request.createReply();
-				reply.setPerformative(ACLMessage.INFORM);
-				
-				User user;
-				try {
-					user = (User) request.getContentObject();
-					//reply.setContentObject(???);
-				} catch (Exception e) {
-					e.printStackTrace();
+				System.out.println("ArtistManager: received REmessage from Curator");
+				List<Long> artifactList = auctionItem.getArtifactList();
+				ACLMessage reply = null;
+				if(artifactList.size() >= 1){
+					Artifact artifact = artHash.remove(artifactList.remove(artifactList.size()-1));
+					reply = request.createReply();//new ACLMessage(ACLMessage.CONFIRM);
+					reply.setPerformative(ACLMessage.INFORM);
+					try {
+						reply.setContentObject(artifact);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					if(artifactList.size() == 0){
+						System.out.println("ArtistManager: This was the last artifact, ending auction");
+						//endAuction();
+					}
+				}	
+	/*		else{
+					System.out.println("ArtistManager: FAILURE: no more artifacts left, too bad Profiler");
+					ACLMessage msg = new ACLMessage(ACLMessage.FAILURE);
+					msg.setOntology("ARTIFACT_DELIVERY");
+					send(msg);
 				}
-
+	*/
 				return reply;
 			}
 		}

@@ -1,6 +1,6 @@
 package hw2;
 
-import hw1.Artifact;
+import hw2.Artifact;
 import hw2.TourGuideAgent.BuildTourInit;
 
 import java.io.IOException;
@@ -32,12 +32,14 @@ public class CuratorAgent extends Agent {
 	
 	public HashMap<Long, Artifact> artCollection;
 	int numberOfArtifacts = 100;
+	List<AID> buyers;
 	
 	public void setup(){
-		System.out.println("CuratorAgent started! ID: "+this.getName());
+		System.out.println("CuratorAgent started! ID: "+this.getLocalName());
 		//Register curator to DF
 		register();
 		HashMap<AID, Integer> maxPrice = new HashMap<AID, Integer>();
+		buyers = new ArrayList();
 		
 		CyclicBehaviour cyclicBehaviour = new CyclicBehaviour() {
 			
@@ -45,15 +47,15 @@ public class CuratorAgent extends Agent {
 			public void action() {
 				ACLMessage msg = myAgent.receive();
 				if(msg != null){
-					System.out.println("Curator: Ontology = "+msg.getOntology());
+					System.out.println("Curator ("+myAgent.getLocalName() + "): Ontology = "+msg.getOntology());
 					switch(msg.getOntology()){
 
 						case "START_AUCTION":
-							System.out.println("Curator recieved start of auction");
+							System.out.println("Curator ("+myAgent.getLocalName() + "): recieved start of auction");
 							informProfilers(msg);
 							break;
 						case "NEW_BID_AUCTION":
-							System.out.println("Curator recieved new bid proposal");
+							System.out.println("Curator ("+myAgent.getLocalName() + "): recieved new bid proposal");
 							AuctionItem auctionItem;
 							try {
 								auctionItem = (AuctionItem) msg.getContentObject();
@@ -61,7 +63,18 @@ public class CuratorAgent extends Agent {
 									AID aid = profilers.getKey();
 									Integer price = profilers.getValue();
 									if(auctionItem.getPrice() <= price){
-										acceptBid(aid, auctionItem, msg);
+										ACLMessage accMsg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+										accMsg.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+										accMsg.setOntology("GET_ARTIFACT");
+										accMsg.addReceiver(msg.getSender());
+										try {
+											accMsg.setContentObject(msg.getContentObject());
+										} catch (IOException e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										};
+										//msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+										acceptBid(aid, auctionItem, accMsg);
 									}
 								}
 							} catch (UnreadableException e) {
@@ -70,14 +83,26 @@ public class CuratorAgent extends Agent {
 							}
 							break;
 						case "END_AUCTION": 
-							System.out.println("Curator recieved end of auction");
+							System.out.println("Curator ("+myAgent.getLocalName() + "): recieved end of auction");
+							buyers = new ArrayList();
 							break;
 						case "ARTIFACT_DELIVERY": 
-							System.out.println("Curator recieved artifact in cyclic");
+							System.out.println("Curator ("+myAgent.getLocalName() + "): recieved artifact in cyclic");
+							if(msg.getPerformative() != ACLMessage.FAILURE){
+								try {
+									AID profilerBuyer = buyers.remove(0);
+									maxPrice.put(profilerBuyer, 0);
+									sendArtifactToProfiler(profilerBuyer, ((Artifact) msg.getContentObject()));
+								} catch (UnreadableException e1) {
+									e1.printStackTrace();
+								}
+							}else{
+								System.out.println("Curator ("+myAgent.getLocalName() + "): Could not get artifact");
+							}
 							break;
 						case "PROFILER_MAX_PRICE": 
 							try {
-								System.out.println("Curator received max acceptable price ("+String.valueOf(msg.getContentObject())+") for Profiler: "+ msg.getSender().getName());
+								System.out.println("Curator ("+myAgent.getLocalName() + "): received max acceptable price ("+String.valueOf(msg.getContentObject())+") for Profiler: "+ msg.getSender().getName());
 								maxPrice.put(msg.getSender(), (Integer) msg.getContentObject());
 							} catch (UnreadableException e) {
 								// TODO Auto-generated catch block
@@ -111,17 +136,19 @@ public class CuratorAgent extends Agent {
 	
 	
 	private void acceptBid(AID profiler, AuctionItem auctionItem, ACLMessage msg){
-		System.out.println("Curator: trying to accept offer");
+		System.out.println("Curator (): trying to accept offer");
+		buyers.add(profiler);
 		SimpleAchieveREInitiator msgInitiator = new SimpleAchieveREInitiator(this, msg){
 			protected void handleInform(ACLMessage inform){
 				super.handleInform(inform);
-				System.out.println("Curator received bid response in REInitiator");
+				System.out.println("Curator ("+myAgent.getLocalName() + "): received bid response in REInitiator");
 				//generera Art collection (One shot behaviour)
-				OneShotBehaviour generateArt = new OneShotBehaviour() {
+				OneShotBehaviour sendToProfiler = new OneShotBehaviour() {
 					
 					@Override
 					public void action() {
 						try {
+							System.out.println("Curator ("+myAgent.getLocalName() + "): sending OneShot from REInitiator");
 							sendArtifactToProfiler(profiler, ((Artifact) inform.getContentObject()));
 						} catch (UnreadableException e) {
 							// TODO Auto-generated catch block
@@ -129,6 +156,7 @@ public class CuratorAgent extends Agent {
 						}
 					}
 				};
+				addBehaviour(sendToProfiler);
 			}
 
 			@Override
@@ -140,13 +168,16 @@ public class CuratorAgent extends Agent {
 			@Override
 			//Should always be running, if it ends, reboot it
 			public int onEnd() {
+				System.out.println("Curator ("+myAgent.getLocalName() + "): REInitiator end");
 				return super.onEnd();
 			}
 			
 		};
+		addBehaviour(msgInitiator);
 	}
 	
 	private void sendArtifactToProfiler(AID profiler, Artifact artifact){
+		System.out.println("Curator (): Sending Artifact To "+ profiler.getLocalName());
 		ACLMessage msg = new ACLMessage(ACLMessage.CONFIRM);
 		msg.setOntology("ARTIFACT");
 		msg.addReceiver(profiler);

@@ -23,6 +23,8 @@ public class Artifact implements Serializable, Cloneable {
 		this.value = (int) (Math.random()*90000+10000);
 		this.isCopy=false;
 		
+		System.out.println("New "+genre+ ", value: "+value);
+		
 	}
 	public Artifact(){
 		generateRandomArtifact();
