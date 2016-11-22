@@ -51,7 +51,12 @@ public class ProfilerAgent extends Agent {
 								System.out.println("Profiler ("+myAgent.getLocalName() + "): recieved information on new auction");
 								int maxPrice = 0;
 								if(artifacts.get(auctionItem.getItemName()) == null){
-									maxPrice = (int) (Math.random()*100000+80000);
+									if(auctionItem.getGenre().equals(user.getGenreInterest())){
+										maxPrice = (int) (auctionItem.getLowestPrice()*1.5); 
+									}else{
+										maxPrice = (int) (auctionItem.getLowestPrice()*1.25); 
+									}
+									
 									System.out.println("Profiler ("+myAgent.getLocalName()+"): new "+auctionItem.getGenre()+", 'I CAN PAY "+String.valueOf(maxPrice)+"'");
 								}else{
 									System.out.println("Profiler ("+myAgent.getLocalName()+"): Already got this "+auctionItem.getGenre());

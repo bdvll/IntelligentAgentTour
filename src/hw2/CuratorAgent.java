@@ -70,7 +70,6 @@ public class CuratorAgent extends Agent {
 										try {
 											accMsg.setContentObject(msg.getContentObject());
 										} catch (IOException e) {
-											// TODO Auto-generated catch block
 											e.printStackTrace();
 										};
 										//msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
@@ -78,7 +77,6 @@ public class CuratorAgent extends Agent {
 									}
 								}
 							} catch (UnreadableException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 							break;
