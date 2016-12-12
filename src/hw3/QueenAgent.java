@@ -24,6 +24,7 @@ public class QueenAgent extends Agent {
 	AID predecessor = null;
 	//list containing occupied positions. Index = x, valueAtIndex = y
 	SmarterArrayList<Integer> occupiedPositions = new SmarterArrayList<Integer>();
+	ArrayList<SmarterArrayList> solutions = new ArrayList<SmarterArrayList>();
 	
 	
 	public void setup(){
@@ -64,7 +65,7 @@ public class QueenAgent extends Agent {
 			pos = currentPos+1;
 		}
 		for(int i = 0; i < occupiedPositions.size(); i++){
-			System.out.println("Queen"+n+": pos: "+pos+"| occupiedPos: "+occupiedPositions.get(i)+"| i: "+i);
+//			System.out.println("Queen"+n+": pos: "+pos+"| occupiedPos: "+occupiedPositions.get(i)+"| i: "+i);
 			if(pos == occupiedPositions.get(i)){
 				pos +=1;
 				i = -1;
@@ -76,7 +77,7 @@ public class QueenAgent extends Agent {
 				return -1;
 			}
 		}
-		System.out.println("Queen"+n+" chose position: "+pos);
+//		System.out.println("Queen"+n+" chose position: "+pos);
 		return pos;	
 	}
 	private OneShotBehaviour sendToQueen(AID queen, boolean isSuccessor, boolean firstAnnouncement){
@@ -84,7 +85,7 @@ public class QueenAgent extends Agent {
 			
 			@Override
 			public void action() {
-				System.out.println(myAgent.getLocalName()+" trying to send: "+occupiedPositions.toString());
+//				System.out.println(myAgent.getLocalName()+" trying to send: "+occupiedPositions.toString());
 				if(queen == null) return;
 				
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
@@ -98,7 +99,10 @@ public class QueenAgent extends Agent {
 					}else if(!(isSuccessor) && !(firstAnnouncement)){
 						msg.setOntology("FAILURE");
 						System.out.println("size: "+occupiedPositions.size()+" n: "+n);
-						if(occupiedPositions.size() == n+1)	occupiedPositions.remove(n);
+						if(occupiedPositions.size() == n+1){
+							int return_int = occupiedPositions.remove((int)n);
+							System.out.println("Queen"+n+": Removing value: "+return_int);
+						}
 						System.out.println("Queen"+n+": Sending failure message to predecessor: "+queen.getLocalName());
 					}else if(firstAnnouncement){
 						msg.setOntology("ANNOUNCEMENT");
@@ -146,14 +150,22 @@ public class QueenAgent extends Agent {
 						int y = chooseCoordinate();
 						OneShotBehaviour oneShot = null;
 						if(y != -1){
-							if(occupiedPositions.size() == n-1){
-								occupiedPositions.set(n, y);
-							}else{
+							if(occupiedPositions.size() <= n){
+								System.out.println("#Adding Value on pos:"+n+" to "+y);
 								occupiedPositions.add(n, y);
+							}else{
+								System.out.println("#Setting value on pos:"+n+" to "+y);
+								occupiedPositions.set(n, y);
 							}
 							
 							if(successor == null){
-								System.out.println("Solution found! : "+occupiedPositions.toString());
+								solutions.add(occupiedPositions);
+								System.out.println("---Solutions found so far!---");
+								for(int i=0; i < solutions.size(); i++){
+									System.out.println(" "+" "+solutions.get(i).toString());
+								}
+								System.out.println("---Total amount: "+solutions.size()+"----");
+								oneShot = sendToQueen(predecessor, false, false);
 							}else{
 								oneShot = sendToQueen(successor, true, false);
 							}
